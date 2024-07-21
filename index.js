@@ -1,5 +1,7 @@
 "use strict";
 
+console.log ('starting...');
+
 const EventEmitter = require ('node:events');
 const fs = require ('node:fs');
 const Docker = require ('dockerode');
