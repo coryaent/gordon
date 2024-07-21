@@ -18,71 +18,137 @@ if (process.env.GORDON_ADMIN_TOKEN_FILE) {
 
 const garageEvents = new EventEmitter ()
 .once ('allNodes', async (garageNodes) => {
-    for (let node of garageNodes) {
-        let swarmNode = await docker.getNode (node.hostname);
-        swarmNode = await swarmNode.inspect ();
-        let garageID = node.id;
-        let capacity = Number.parseInt (swarmNode.Spec.Labels[process.env.GORDON_CAPACITY_LABEL]);
-        let zone = swarmNode.Spec.Labels[process.env.GORDON_ZONE_LABEL];
-        let tags = swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL].split (',');
-
-        fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify (
-                [{
-                    id: garageID,
-                    zone: zone,
-                    capacity: capacity,
-                    tags: tags
-                }])
-        });
-    }
 
     clearInterval (knownNodesWatch);
+
+    let modifications = [];
+
+    for (let node of garageNodes) {
+        try {
+            let swarmNode = await docker.getNode (node.hostname);
+            swarmNode = await swarmNode.inspect ();
+        } catch (error) {
+            console.log ('error inspecting swarm node', node.hostname);
+            process.exit (1);
+        }
+
+        let modification = {};
+        modification.id = node.id
+
+        let capacity = null;
+        if (swarmNode.Spec.Labels[process.env.GORDON_CAPACITY_LABEL] != "null") {
+            capacity = Number.parseInt (swarmNode.Spec.Labels[process.env.GORDON_CAPACITY_LABEL]);
+        }
+        modification.capacity = capacity;
+
+        modification.zone = swarmNode.Spec.Labels[process.env.GORDON_ZONE_LABEL];
+
+        let tags = undefined;
+        if (swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL]) {
+            tags = swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL].split (',');
+        }
+        modification.tags = tags ? tags : [];
+
+        modifications.push (modification);
+    }
+
+    try {
+        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify (modifications)
+        });
+    } catch (error) {
+        console.log ('error staging layout modifications:', error.message);
+        process.exit (1);
+    }
+
+    if (response.status != 200) {
+        console.log ('error staging layout modifications:', response.statusText);
+        process.exit (1);
+    }
 })
 .once ('allChanges', async () => {
-    let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
-        headers: headers
-    });
-    response = await response.json ();
-    let version = response.version + 1;
-
-    fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify (
-            {
-                version: version
-            })
-    });
 
     clearInterval (changesWatch);
+
+    try {
+        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+            headers: headers
+        });
+    } catch (error) {
+        console.log ('error fetching layout version:', error.message);
+        process.exit (1);
+    }
+    if (response.status == 200) {
+        response = await response.json ();
+        let version = response.version + 1;
+
+        try {
+            await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify (
+                    {
+                        version: version
+                    })
+            });
+        } catch (error) {
+            console.log ('error applying layout:', error.message);
+            process.exit (1);
+        }
+    } else {
+        console.log ('error applying layout:', response.statusText);
+        process.exit (1);
+    }
+
+    console.log ("success!");
+    process.exit (0);
 });
 
 let knownNodesWatch = setInterval (async () => {
-    let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/status`, {
-        headers: headers
-    });
-    response = await response.json ();
-    let upNodes = 0;
-    for (let node of response.nodes) {
-        if (node.isUp) {
-            upNodes++;
+    try {
+        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/status`, {
+            headers: headers
+        });
+    } catch (error) {
+        console.log ('error fetching status:', error.message);
+        return;
+    }
+    if (response.status == 200) {
+        response = await response.json ();
+        let upNodes = 0;
+        for (let node of response.nodes) {
+            if (node.isUp) {
+                upNodes++;
+            }
         }
+        console.log (`found ${upNodes}/${process.env.GORDON_EXPECTED_NODE_COUNT} garage nodes`);
+        if (upNodes == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
+            garageEvents.emit ('allNodes', response.nodes);
+        }
+    } else {
+        console.log ("error fetching status:", response.statusText);
     }
-    if (upNodes == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
-        garageEvents.emit ('allNodes', response.nodes);
-    }
-}, 1000);
+}, 2500);
 
 let changesWatch = setInterval (async () => {
-    let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
-        headers: headers
-    });
-    response = await response.json ();
-    let numChanges = response.stagedRoleChanges.length;
-    if (numChanges == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
-        garageEvents.emit ('allChanges');
+    try {
+        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+            headers: headers
+        });
+    catch (error) {
+        console.log ('error fetching layout changes:', error.message);
+        return;
     }
-}, 1000);
+    if (response.status == 200) {
+        response = await response.json ();
+        let numChanges = response.stagedRoleChanges.length;
+        console.log (`found ${numChanges}/${process.env.GORDON_EXPECTED_NODE_COUNT} staged changes`);
+        if (numChanges == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
+            garageEvents.emit ('allChanges');
+        }
+    } else {
+        console.log ("error fetching layout changes:", response.statusText);
+    }
+}, 2500);
