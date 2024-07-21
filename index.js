@@ -137,7 +137,7 @@ let changesWatch = setInterval (async () => {
         let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
             headers: headers
         });
-    catch (error) {
+    } catch (error) {
         console.log ('error fetching layout changes:', error.message);
         return;
     }
