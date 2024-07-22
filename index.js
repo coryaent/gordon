@@ -47,7 +47,7 @@ const garageEvents = new EventEmitter ()
 
         let tags = undefined;
         if (swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL]) {
-            tags = swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL].split (',');
+            tags = JSON.parse (swarmNode.Spec.Labels[process.env.GORDON_TAGS_LABEL]).split (',');
         }
         modification.tags = tags ? tags : [];
 
