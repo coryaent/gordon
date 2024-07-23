@@ -27,7 +27,7 @@ const garageEvents = new EventEmitter ()
 
     for (let node of garageNodes) {
         try {
-            let swarmNode = await docker.getNode (node.hostname);
+            var swarmNode = await docker.getNode (node.hostname);
             swarmNode = await swarmNode.inspect ();
         } catch (error) {
             console.log ('error inspecting swarm node', node.hostname);
@@ -55,7 +55,7 @@ const garageEvents = new EventEmitter ()
     }
 
     try {
-        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+        var response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
             method: "POST",
             headers: headers,
             body: JSON.stringify (modifications)
@@ -75,7 +75,7 @@ const garageEvents = new EventEmitter ()
     clearInterval (changesWatch);
 
     try {
-        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+        var response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
             headers: headers
         });
     } catch (error) {
@@ -109,8 +109,9 @@ const garageEvents = new EventEmitter ()
 });
 
 let knownNodesWatch = setInterval (async () => {
+
     try {
-        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/status`, {
+        var response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/status`, {
             headers: headers
         });
     } catch (error) {
@@ -135,8 +136,9 @@ let knownNodesWatch = setInterval (async () => {
 }, 2500);
 
 let changesWatch = setInterval (async () => {
+
     try {
-        let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+        var response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
             headers: headers
         });
     } catch (error) {
