@@ -28,7 +28,9 @@ const garageEvents = new EventEmitter ()
     for (let node of garageNodes) {
         try {
             var swarmNode = await docker.getNode (node.hostname);
+            console.log ('got node', node.hostname);
             swarmNode = await swarmNode.inspect ();
+            console.log ('got node', node.hostname, 'details');
         } catch (error) {
             console.log ('error inspecting swarm node', node.hostname);
             process.exit (1);
@@ -128,6 +130,7 @@ let knownNodesWatch = setInterval (async () => {
         }
         console.log (`found ${upNodes}/${process.env.GORDON_EXPECTED_NODE_COUNT} garage nodes`);
         if (upNodes == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
+            console.log (response.nodes);
             garageEvents.emit ('allNodes', response.nodes);
         }
     } else {
@@ -147,6 +150,15 @@ let changesWatch = setInterval (async () => {
     }
     if (response.status == 200) {
         response = await response.json ();
+
+        let numRoles = response.roles.length;
+        if (numRoles == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
+            console.log (`found ${numRoles}/${process.env.GORDON_EXPECTED_NODE_COUNT} roles`);
+            console.log ('already initialized');
+            garageEvents.removeAllListeners ();
+            process.exit (0);
+        }
+
         let numChanges = response.stagedRoleChanges.length;
         console.log (`found ${numChanges}/${process.env.GORDON_EXPECTED_NODE_COUNT} staged changes`);
         if (numChanges == Number.parseInt (process.env.GORDON_EXPECTED_NODE_COUNT)) {
