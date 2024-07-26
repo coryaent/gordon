@@ -89,7 +89,7 @@ const garageEvents = new EventEmitter ()
         let version = response.version + 1;
 
         try {
-            await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout`, {
+            var application = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/layout/apply`, {
                 method: "POST",
                 headers: headers,
                 body: JSON.stringify (
@@ -101,13 +101,18 @@ const garageEvents = new EventEmitter ()
             console.log ('error applying layout:', error.message);
             process.exit (1);
         }
+        if (application.status == 200) {
+            console.log ("success!");
+            process.exit (0);
+        } else {
+            console.log ('error applying layout:' application.statusText);
+            process.exit (1);
+        }
     } else {
-        console.log ('error applying layout:', response.statusText);
+        console.log ('error fetching layout version:', response.statusText);
         process.exit (1);
     }
 
-    console.log ("success!");
-    process.exit (0);
 });
 
 let knownNodesWatch = setInterval (async () => {
@@ -124,7 +129,7 @@ let knownNodesWatch = setInterval (async () => {
         response = await response.json ();
         let upNodes = 0;
         for (let node of response.nodes) {
-            if (node.isUp) {
+            if (node.isUp && node.hostname) {
                 upNodes++;
             }
         }
