@@ -105,7 +105,7 @@ const garageEvents = new EventEmitter ()
             console.log ("success!");
             process.exit (0);
         } else {
-            console.log ('error applying layout:' application.statusText);
+            console.log ('error applying layout:', application.statusText);
             process.exit (1);
         }
     } else {
