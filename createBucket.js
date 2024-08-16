@@ -67,7 +67,7 @@ async function create (bucketName) {
         process.exit (1);
     }
     // any good bucket has an id
-    if (bucket.id) {
+    if (bucket && bucket.id) {
         console.log ("====================================================================================");
         // output the required keys
         console.log (" bucket:", bucket.globalAliases[0] || bucket.id);
