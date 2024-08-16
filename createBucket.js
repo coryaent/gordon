@@ -2,6 +2,8 @@
 
 console.log ('Creating bucket...');
 
+const fs = require ('node:fs');
+
 const headers = {
     "Content-Type": "application/json"
 };
@@ -26,8 +28,9 @@ async function create (bucketName) {
         console.log (bucket.message);
         process.exit (0);
     }
-    // console.log ("bucket:", bucket);
-
+    if (process.argv.includes ("--debug")) {
+        console.debug ("bucket:", bucket);
+    }
     // create a new key
     response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/key`, {
         method: "POST",
@@ -37,6 +40,9 @@ async function create (bucketName) {
         })
     });
     let accessKey = await response.json ();
+    if (process.argv.includes ("--debug")) {
+        console.debug ('accessKey:', accessKey);
+    }
 
     // allow the new key to access the bucket
     response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/bucket/allow`, {
@@ -52,6 +58,10 @@ async function create (bucketName) {
             }
         })
     });
+    if (process.argv.includes ("--debug")) {
+        console.debug ("response:", response);
+        console.log ("===========================================================");
+    }
 
     // output the required keys
     console.log ("bucket:", bucket.globalAliases[0] || bucket.id);
