@@ -66,12 +66,17 @@ async function create (bucketName) {
     } catch (error) {
         process.exit (1);
     }
-    console.log ("====================================================================================");
-    // output the required keys
-    console.log (" bucket:", bucket.globalAliases[0] || bucket.id);
-    console.log (" access_key_id:", accessKey.accessKeyId);
-    console.log (" secret_access_key:", accessKey.secretAccessKey);
-    console.log ("====================================================================================");
+    // any good bucket has an id
+    if (bucket.id) {
+        console.log ("====================================================================================");
+        // output the required keys
+        console.log (" bucket:", bucket.globalAliases[0] || bucket.id);
+        console.log (" access_key_id:", accessKey.accessKeyId);
+        console.log (" secret_access_key:", accessKey.secretAccessKey);
+        console.log ("====================================================================================");
+    } else {
+        process.exit (1);
+    }
 }
 
 create (process.env.GORDON_NEW_BUCKET_NAME);
