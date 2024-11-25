@@ -14,8 +14,10 @@ if (process.env.GORDON_ADMIN_TOKEN_FILE) {
     headers.Authorization = `Bearer ${fs.readFileSync (process.env.GORDON_ADMIN_TOKEN_FILE).toString ()}`
 }
 
+let accessKey = undefined;
+
 async function create (bucketName) {
-    // this needs to silently fail so that the logs are not cluttered with nonsense
+    // this needs to quietly fail so that the logs are not cluttered with nonsense
     try {
         // create a new bucket
         let response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/bucket`, {
@@ -34,19 +36,30 @@ async function create (bucketName) {
             console.debug ("bucket:", bucket);
         }
         // create a new key
-        response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/key`, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify ({
-                name: `${process.env.GORDON_NEW_BUCKET_NAME}-key`
-            })
-        });
-        var accessKey = await response.json ();
-        if (process.argv.includes ("--debug")) {
+        if (!process.env.GARAGE_ACCESS_KEY_ID) {
+            response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/key`, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify ({
+                    name: `${process.env.GORDON_NEW_BUCKET_NAME}-key`
+                })
+            });
+            accessKey = await response.json ();
+            if (process.argv.includes ("--debug")) {
+                console.debug ('accessKey:', accessKey);
+            }
+        }
+        // use an existing key
+        else {
+            response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/key?` + new URLSearchParams({
+                id: process.env.GARAGE_ACCESS_KEY_ID,
+                showSecretKey: "true",
+            }).toString());
+            accessKey = await response.json ();
             console.debug ('accessKey:', accessKey);
         }
 
-        // allow the new key to access the bucket
+        // allow the key to access the bucket
         response = await fetch (`http://${process.env.GORDON_ADMIN_ENDPOINT}/v1/bucket/allow`, {
             method: "POST",
             headers: headers,
@@ -64,17 +77,19 @@ async function create (bucketName) {
             console.debug ("response:", response);
         }
     } catch (error) {
+        console.error ("Unable to create bucket", process.env.GORDON_NEW_BUCKET_NAME);
         process.exit (1);
     }
     // any good bucket has an id
     if (bucket && bucket.id) {
-        console.log ("====================================================================================");
+        console.log ("=====================================================================================");
         // output the required keys
         console.log (" bucket:", bucket.globalAliases[0] || bucket.id);
         console.log (" access_key_id:", accessKey.accessKeyId);
         console.log (" secret_access_key:", accessKey.secretAccessKey);
-        console.log ("====================================================================================");
+        console.log ("=====================================================================================");
     } else {
+        console.error ("Unable to create bucket", process.env.GORDON_NEW_BUCKET_NAME);
         process.exit (1);
     }
 }
