@@ -1,14 +1,11 @@
-FROM node:22.5.1
+FROM node:24.19.0
 
-# install node.js application
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
 RUN npm install
 
-COPY ./index.js ./
-COPY ./initialization.js ./
-COPY ./createBucket.js ./
+COPY . .
 
 ENTRYPOINT ["node", "index.js"]
