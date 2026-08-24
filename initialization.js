@@ -7,25 +7,25 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // no arguments to dockerode means this must run on a manager with /var/run/docker.sock mounted
 const docker = new Docker();
 
-// read admin token if the user passed it as a file
-const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
-// bail if there is no admin token
-if (!adminToken) {
-  console.error('No admin token specified.');
-  process.exit(1);
-}
-
-// http headers
-const headers = {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${adminToken}`
-};
-
 // declare here to avoid worries about scope
 let response, result;
 
 module.exports = {
   initialize: async function(options) {
+
+    // read admin token if the user passed it as a file
+    const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
+    // bail if there is no admin token
+    if (!adminToken) {
+      console.error('No admin token specified.');
+      process.exit(1);
+    }
+
+    // http headers
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    };
 
     // find the nodes
     let numUpNodes = 0;
