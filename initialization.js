@@ -7,24 +7,25 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // no arguments to dockerode means this must run on a manager with /var/run/docker.sock mounted
 const docker = new Docker();
 
+// read admin token if the user passed it as a file
+const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
+// bail if there is no admin token
+if (!adminToken) {
+  console.error('No admin token specified.');
+  process.exit(1);
+}
+
+// http headers
+const headers = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${adminToken}`
+};
+
+// declare here to avoid worries about scope
+let response, result;
+
 module.exports = {
   initialize: async function(options) {
-    // read admin token if the user passed it as a file
-    const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
-    // bail if there is no admin token
-    if (!adminToken) {
-      console.error('No admin token specified.');
-      process.exit(1);
-    }
-
-    // http headers
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${adminToken}`
-    };
-
-    // declare here to avoid worries about scope
-    let response, result;
 
     // find the nodes
     let numUpNodes = 0;
@@ -48,7 +49,7 @@ module.exports = {
     }
 
     // now we have all the nodes
-    let garageNodes = result.nodes;
+    const garageNodes = result.nodes;
     if (options.debug) console.debug('garageNodes:', garageNodes);
 
     // the layout changes that will be applied
@@ -64,6 +65,7 @@ module.exports = {
       
       // get the swarm node's details
       swarmNode = await swarmNode.inspect();
+      if (options.debug) console.debug('swarm node details:', swarmNode);
 
       // a modification for a specific node
       let modification = {};
@@ -82,6 +84,9 @@ module.exports = {
       // set the zone
       modification.zone = swarmNode.Spec.Labels[options.zoneLabel];
 
+      // debug
+      if (options.debug) console.debug('modification:', modification);
+
       // add this modification to the array of modifications
       roleChanges.push(modification);
     }
@@ -89,22 +94,27 @@ module.exports = {
     // send request to update cluster layout
     response = await fetch(`${options.endpoint}/v2/UpdateClusterLayout`,
     {
-      'method': "POST",
+      'method': 'POST',
       'headers': headers,
       'body': {
-        'parameters': {},
+        'parameters': null,
         'roles': roleChanges
       }
     });
 
-    // parse the response in order to get the cluster version
+    // parse the response in order to get the layout version
     result = await response.json();
 
     // increment the layout version
-    let layoutVersion = result.version + 1;
+    const layoutVersion = result.version + 1;
 
+    // send request to apply the staged cluster modifications
     response = await fetch(`${options.endpoint}/v2/ApplyClusterLayout`, {
-      'version': layoutVersion
+      'method': 'POST',
+      'headers': headers,
+      'body': {
+        'version': layoutVersion
+      }
     });
 
     // parse the response to get the message
