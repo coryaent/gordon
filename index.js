@@ -1,6 +1,7 @@
 "use strict";
 
 const { program, Option } = require('commander');
+const { initialize } = require('./initialization.js');
 
 const endpoint = 
   new Option('--endpoint <endpoint>', 'garage admin endpoint')
@@ -47,6 +48,9 @@ async function main() {
       new Option('--tags-label <label>', 'node label defining (comma-seperated) garage tags')
         .env('GORDON_TAGS_LABEL')
     )
+    .action(async (options) => {
+      await initialize(options);
+    });
 
     
   program
@@ -66,7 +70,7 @@ async function main() {
     )
     .action(async (options) => {
       console.log("options:", options);
-    })
+    });
 
   await program.parseAsync(process.argv);
 }
