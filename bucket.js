@@ -86,15 +86,19 @@ module.exports = {
     switch (response.status) {
       case 200:
         console.log('Bucket has been deleted')
+        break;
 
       case 400:
         console.error('Bucket is not empty');
+        break;
 
       case 404:
         console.error('Bucket not found');
+        break;
 
       case 500:
         console.error('Internal server error')
+        break;
 
       default:
         console.error('Unknown error')
