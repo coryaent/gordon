@@ -2,6 +2,7 @@
 
 const { program, Option } = require('commander');
 const { initialize } = require('./initialization.js');
+const { createBucket, deleteBucket } = require('/bucket.js');
 
 const endpoint = 
   new Option('--endpoint <endpoint>', 'garage admin endpoint')
@@ -69,7 +70,13 @@ async function main() {
         .conflicts('create')
     )
     .action(async (options) => {
-      console.log("options:", options);
+      if (options.create) {
+        await createBucket(options);
+      } else if (options.delete) {
+          await deleteBucket(options);
+      } else {
+        console.error('Either --create or --delete must be specified');
+      }
     });
 
   await program.parseAsync(process.argv);
