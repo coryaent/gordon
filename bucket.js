@@ -2,22 +2,23 @@
 
 const fs = require("node:fs");
 
-// read admin token if the user passed it as a file
-const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
-// bail if there is no admin token
-if (!adminToken) {
-  console.error('No admin token specified.');
-  process.exit(1);
-}
-
-// http headers
-const headers = {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${adminToken}`
-};
-
 module.exports = {
   createBucket: async function(options) {
+
+    // read admin token if the user passed it as a file
+    const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
+    // bail if there is no admin token
+    if (!adminToken) {
+      console.error('No admin token specified.');
+      process.exit(1);
+    }
+
+    // http headers
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    };
+
     // this will be used multiple times, declared here for clarity
     let response;
 
@@ -61,6 +62,22 @@ module.exports = {
 
   },
   deleteBucket: async function(options) {
+
+    // read admin token if the user passed it as a file
+    const adminToken = options.adminToken || fs.readFileSync(options.tokenFile).toString().trim();
+    // bail if there is no admin token
+    if (!adminToken) {
+      console.error('No admin token specified.');
+      process.exit(1);
+    }
+
+    // http headers
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    };
+
+
     let response = await fetch(`${options.endpoint}/v2/DeleteBucket`, {
       'method': 'POST',
       'id': options.delete
