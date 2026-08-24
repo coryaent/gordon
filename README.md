@@ -8,14 +8,14 @@ Passing the command line argument `--init` will create a new cluster based on la
 - `GORDON_EXPECTED_NODE_COUNT` (total number of gateway and storage nodes)
 - `GORDON_ADMIN_ENDPOINT`
 - `GORDON_ADMIN_TOKEN`
-- `GORDON_ADMIN_TOKEN_FILE` (overrides `GORDON_ADMIN_TOKEN`)
+- `GORDON_ADMIN_TOKEN` (overrides `GORDON_ADMIN_TOKEN_FILE`)
 - `GORDON_CAPACITY_LABEL` (e.g. `swarm.yachts.garage.capacity`, "null" for gateways)
 - `GORDON_ZONE_LABEL` (e.g. `swarm.yachts.garage.zone`)
 - `GORDON_TAGS_LABEL` (e.g. `swarm.yachts.garage.tags`, space-seperated array)
 
 
 ## Bucket Creation
-By passing the command line argument `--create-bucket`, a new bucket will be created, and its keys will be displayed in the docker service logs. Optionally, one can set a name for the bucket by passing the environmental variable `GORDON_NEW_BUCKET_NAME`, which gives the new bucket a global alias.
+Passing `bucket --create <name>` creates a new bucket, outputting the required keys.
 
 ## Development
 ```bash
