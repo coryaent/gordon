@@ -2,7 +2,7 @@
 
 const { program, Option } = require('commander');
 const { initialize } = require('./initialization.js');
-const { createBucket, deleteBucket } = require('/bucket.js');
+const { createBucket, deleteBucket } = require('./bucket.js');
 
 const endpoint = 
   new Option('--endpoint <endpoint>', 'garage admin endpoint')
